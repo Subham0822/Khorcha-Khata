@@ -1,6 +1,6 @@
-## Expensify Zen
+## Khorcha Khata
 
-Expensify Zen is a minimal, calming expense tracker. It lets you quickly log expenses, see them in a clean two‑column layout (name and amount), and view your total spent. Authentication is handled via Firebase (Google and GitHub), and data is stored in Firebase.
+Khorcha Khata is a minimal, calming expense tracker. It lets you quickly log expenses, see them in a clean two‑column layout (name and amount), and view your total spent. Authentication is handled via Firebase (Google and GitHub), and data is stored in Firebase.
 
 ### Features
 
