@@ -426,6 +426,11 @@ function ExpenseTable({ expenses, onUpdate, onDelete }: {
   onUpdate: (expenseId: string, values: UpdatableExpense) => void;
   onDelete: (expenseId: string) => void;
 }) {
+  const emptyRows =
+    expenses.length < EXPENSES_PER_PAGE
+      ? Array(EXPENSES_PER_PAGE - expenses.length).fill(null)
+      : [];
+
   return (
     <Table>
       <TableHeader>
@@ -441,7 +446,7 @@ function ExpenseTable({ expenses, onUpdate, onDelete }: {
       <TableBody>
         {expenses.length > 0 ? (
           expenses.map((expense) => (
-            <TableRow key={expense.id} className="transition-colors">
+            <TableRow key={expense.id} className="transition-colors h-[73px]">
               <TableCell className="hidden sm:table-cell">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                   {categoryIcons[expense.category]}
@@ -514,6 +519,11 @@ function ExpenseTable({ expenses, onUpdate, onDelete }: {
             </TableCell>
           </TableRow>
         )}
+        {emptyRows.map((_, index) => (
+          <TableRow key={`empty-${index}`} className="h-[73px]">
+            <TableCell colSpan={6}></TableCell>
+          </TableRow>
+        ))}
       </TableBody>
     </Table>
   );
@@ -996,5 +1006,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
