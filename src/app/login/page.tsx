@@ -76,15 +76,15 @@ export default function LoginPage() {
 
   if (loading || (!loading && user)) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40">
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
         <div>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md mx-auto">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md mx-auto animate-in fade-in-50 zoom-in-95">
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto w-16 h-16">
             <Logo />

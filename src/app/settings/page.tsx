@@ -10,7 +10,7 @@ export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
 
     return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col bg-background">
         <Header />
         <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6 animate-in fade-in-50">
             <div className="flex items-center gap-4">
