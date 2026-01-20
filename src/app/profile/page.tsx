@@ -90,7 +90,7 @@ export default function ProfilePage() {
                     to keep spends in check.
                   </p>
                 </div>
-              </Avatar>
+              </div>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
               <span>
