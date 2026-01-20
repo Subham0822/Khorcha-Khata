@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +19,6 @@ import { useRouter } from "next/navigation";
 export function Header() {
   const { user } = useAuth();
   const router = useRouter();
-  const { setTheme } = useTheme();
 
   const handleLogout = async () => {
     await signOut();
@@ -29,60 +26,64 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 sm:px-6 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b-[3px] border-[color:rgb(15_23_42)] bg-secondary px-4 sm:px-6">
       <Link
         href="/"
-        className="flex items-center gap-2 text-lg font-semibold"
+        className="group inline-flex items-center gap-2 rounded-md border-[2px] border-[color:rgb(15_23_42)] bg-card px-3 py-1.5 text-sm font-semibold shadow-[3px_3px_0_0_rgb(15_23_42)] transition-transform hover:-translate-y-0.5"
       >
-        <div className="w-8 h-8">
+        <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-sm bg-primary text-primary-foreground">
+          <div className="relative h-5 w-5 scale-95">
             <Logo />
+          </div>
         </div>
-        <span className="font-bold text-foreground">Khorcha Khata</span>
+        <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
+          Khorcha Khata
+        </span>
       </Link>
-      <div className="relative ml-auto flex-1 md:grow-0">
-        {/* Can be used for search in future */}
-      </div>
-       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setTheme("light")}>
-            Light
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("dark")}>
-            Dark
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("system")}>
-            System
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+
+      <div className="relative ml-auto flex-1 md:grow-0" />
+
       {user && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="overflow-hidden rounded-full">
-              <Avatar>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative overflow-hidden rounded-md border-[2px] border-[color:rgb(15_23_42)] bg-card p-[2px] shadow-[3px_3px_0_0_rgb(15_23_42)] transition-transform hover:-translate-y-0.5"
+            >
+              <Avatar className="relative h-9 w-9 border border-background/60 rounded-sm">
                 <AvatarImage
                   src={user.photoURL || "https://picsum.photos/40/40"}
                   alt={user.displayName || "User avatar"}
                   data-ai-hint="user avatar"
                 />
-                <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-br from-primary/90 via-violet-500 to-sky-400 text-xs font-bold text-background">
+                  {user.displayName?.charAt(0).toUpperCase() || "U"}
+                </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{user.displayName || 'My Account'}</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuLabel className="text-xs">
+              <span className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+                Signed in as
+              </span>
+              <span className="line-clamp-1 text-sm font-semibold">
+                {user.displayName || "My Account"}
+              </span>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/profile')}>Profile</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/profile")}>
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")}>
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-destructive focus:text-destructive"
+            >
               Logout
             </DropdownMenuItem>
           </DropdownMenuContent>

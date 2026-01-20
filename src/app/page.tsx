@@ -21,12 +21,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  MoreHorizontal,
+  Download,
 } from "lucide-react";
 import { format, startOfMonth, isSameMonth, isToday } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -110,6 +111,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Footer } from "@/components/footer";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Pie, PieChart, Cell } from "recharts";
 
 
 const expenseSchema = z.object({
@@ -135,12 +142,48 @@ const paymentMethodIcons: Record<Expense['paymentMethod'], React.ReactNode> = {
   upi: <Landmark className="h-4 w-4" />,
 };
 
+const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+  food: "#fb7185", // rose-400
+  transport: "#38bdf8", // sky-400
+  shopping: "#a78bfa", // violet-400
+  bills: "#34d399", // emerald-400
+  other: "#fbbf24", // amber-400
+};
+
+const PAYMENT_COLORS: Record<Expense["paymentMethod"], string> = {
+  cash: "#fbbf24", // amber-400
+  upi: "#38bdf8", // sky-400
+};
+
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
   }).format(amount);
 };
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const csv = rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const safe = (cell ?? "").replaceAll('"', '""');
+          return `"${safe}"`;
+        })
+        .join(",")
+    )
+    .join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 function EditExpenseDialog({
   expense,
@@ -337,6 +380,13 @@ function PaginatedExpenseTable({
   const [inputValue, setInputValue] = React.useState("1");
   const totalPages = Math.ceil(expenses.length / EXPENSES_PER_PAGE);
 
+  React.useEffect(() => {
+    // QoL: whenever the incoming list changes (filters/search/month switch),
+    // reset pagination so you don't land on empty pages.
+    setCurrentPage(1);
+    setInputValue("1");
+  }, [expenses]);
+
   const paginatedExpenses = expenses.slice(
     (currentPage - 1) * EXPENSES_PER_PAGE,
     currentPage * EXPENSES_PER_PAGE
@@ -432,49 +482,59 @@ function ExpenseTable({ expenses, onUpdate, onDelete }: {
       : [];
 
   return (
-    <Table>
+    <Table className="border-[3px] border-[color:rgb(15_23_42)] bg-card text-[13px]">
       <TableHeader>
-        <TableRow>
-          <TableHead className="hidden sm:table-cell">Category</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead className="hidden md:table-cell">Date</TableHead>
-          <TableHead className="hidden lg:table-cell">Payment</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="w-[100px] text-center">Actions</TableHead>
+        <TableRow className="bg-[hsl(3_84%_58%)] text-card-foreground">
+          <TableHead className="border-b-[2px] border-[color:rgb(15_23_42)] text-[11px] font-extrabold uppercase tracking-[0.18em] text-card-foreground">
+            Rank
+          </TableHead>
+          <TableHead className="border-b-[2px] border-[color:rgb(15_23_42)] text-[11px] font-extrabold uppercase tracking-[0.18em]">
+            Name
+          </TableHead>
+          <TableHead className="hidden md:table-cell border-b-[2px] border-[color:rgb(15_23_42)] text-[11px] font-extrabold uppercase tracking-[0.18em]">
+            Category
+          </TableHead>
+          <TableHead className="hidden lg:table-cell border-b-[2px] border-[color:rgb(15_23_42)] text-[11px] font-extrabold uppercase tracking-[0.18em]">
+            Payment
+          </TableHead>
+          <TableHead className="hidden md:table-cell border-b-[2px] border-[color:rgb(15_23_42)] text-center text-[11px] font-extrabold uppercase tracking-[0.18em]">
+            Date
+          </TableHead>
+          <TableHead className="border-b-[2px] border-[color:rgb(15_23_42)] text-right text-[11px] font-extrabold uppercase tracking-[0.18em]">
+            Amount
+          </TableHead>
+          <TableHead className="w-[90px] border-b-[2px] border-[color:rgb(15_23_42)] text-center text-[11px] font-extrabold uppercase tracking-[0.18em]">
+            Actions
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {expenses.length > 0 ? (
-          expenses.map((expense) => (
-            <TableRow key={expense.id} className="transition-colors h-[73px]">
-              <TableCell className="hidden sm:table-cell">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                  {categoryIcons[expense.category]}
-                </div>
+          expenses.map((expense, index) => (
+            <TableRow
+              key={expense.id}
+              className="h-[56px] border-b border-[color:rgb(15_23_42_/_0.5)] odd:bg-card even:bg-[hsl(48_100%_94%)] hover:bg-[hsl(48_100%_90%)] transition-all duration-150 hover:-translate-y-[1px] hover:shadow-[3px_3px_0_0_rgb(15_23_42)]"
+            >
+              <TableCell className="align-middle text-sm font-semibold">
+                {index + 1}
               </TableCell>
-              <TableCell className="font-medium">
-                <div className="flex flex-col">
-                  <span>{expense.name}</span>
-                  <span className="text-xs text-muted-foreground sm:hidden capitalize">{expense.category} | {expense.paymentMethod}</span>
-                  <span className="text-xs text-muted-foreground md:hidden">{format(expense.date, "PPP")}</span>
-                </div>
+              <TableCell className="align-middle text-sm font-semibold">
+                {expense.name}
               </TableCell>
-              <TableCell className="hidden md:table-cell text-muted-foreground">
-                {format(expense.date, "PPP")}
+              <TableCell className="hidden md:table-cell align-middle text-sm capitalize">
+                {expense.category}
               </TableCell>
-              <TableCell className="hidden lg:table-cell">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    {paymentMethodIcons[expense.paymentMethod]}
-                  </div>
-                  <span className="capitalize">{expense.paymentMethod}</span>
-                </div>
+              <TableCell className="hidden lg:table-cell align-middle text-sm capitalize">
+                {expense.paymentMethod}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="hidden md:table-cell align-middle text-center text-sm text-muted-foreground">
+                {format(expense.date, "dd MMM yyyy")}
+              </TableCell>
+              <TableCell className="align-middle text-right text-sm font-bold">
                 {formatCurrency(expense.amount)}
               </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-center">
+              <TableCell className="align-middle">
+                <div className="flex items-center justify-center gap-1">
                   <EditExpenseDialog
                     expense={expense}
                     onUpdate={(values) => onUpdate(expense.id, values)}
@@ -485,9 +545,9 @@ function ExpenseTable({ expenses, onUpdate, onDelete }: {
                         aria-label="Delete expense"
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground hover:text-destructive"
+                        className="h-7 w-7 border border-[color:rgb(15_23_42)] bg-card text-[color:rgb(15_23_42)] hover:bg-destructive hover:text-destructive-foreground"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -512,16 +572,16 @@ function ExpenseTable({ expenses, onUpdate, onDelete }: {
         ) : (
           <TableRow>
             <TableCell
-              colSpan={6}
-              className="h-24 text-center text-muted-foreground"
+              colSpan={7}
+              className="h-24 text-center text-xs text-muted-foreground"
             >
               No expenses for this period.
             </TableCell>
           </TableRow>
         )}
         {emptyRows.map((_, index) => (
-          <TableRow key={`empty-${index}`} className="h-[73px]">
-            <TableCell colSpan={6}></TableCell>
+          <TableRow key={`empty-${index}`} className="h-[56px]">
+            <TableCell colSpan={7}></TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -538,12 +598,25 @@ export default function DashboardPage() {
   const [isFetching, setIsFetching] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const searchRef = React.useRef<HTMLInputElement | null>(null);
   
   React.useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  React.useEffect(() => {
+    // QoL: press "/" to jump to search (common pattern in dashboards).
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   React.useEffect(() => {
     if (user) {
@@ -600,6 +673,33 @@ export default function DashboardPage() {
       pastMonthsExpenses: Object.values(groupedByMonth).sort((a, b) => b.month.getTime() - a.month.getTime())
     };
   }, [filteredExpenses]);
+
+  const categoryBreakdown = React.useMemo(() => {
+    const totals: Record<ExpenseCategory, number> = {
+      food: 0,
+      transport: 0,
+      shopping: 0,
+      bills: 0,
+      other: 0,
+    };
+
+    for (const exp of currentMonthExpenses) {
+      totals[exp.category] += exp.amount;
+    }
+
+    const total = Object.values(totals).reduce((a, b) => a + b, 0);
+    const items = (Object.entries(totals) as [ExpenseCategory, number][])
+      .filter(([, amt]) => amt > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percent: total > 0 ? Math.round((amount / total) * 100) : 0,
+        fill: CATEGORY_COLORS[category],
+      }));
+
+    return { total, items };
+  }, [currentMonthExpenses]);
   
   const dailyAndMonthlyTotals = React.useMemo(() => {
     const originalCurrentMonthExpenses = expenses.filter(expense => isSameMonth(expense.date, new Date()));
@@ -688,8 +788,10 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40">
-        <div>Loading...</div>
+      <div className="flex min-h-screen w-full items-center justify-center bg-background/60">
+        <div className="rounded-full border border-border/70 bg-muted/60 px-4 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+          Loading your dashboard…
+        </div>
       </div>
     );
   }
@@ -697,9 +799,25 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <Header />
-      <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6 animate-in fade-in-50">
+      <main className="flex flex-1 flex-col gap-5 p-4 sm:p-6 animate-in fade-in-50">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
+              Hey, {user.displayName?.split(" ")[0] || "spender"} 👋
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Here’s a quick vibe-check of your expenses. Add, edit and explore
+              without any spreadsheet stress.
+            </p>
+          </div>
+          <div className="kk-aurora-pill inline-flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Live synced with your account
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-           <Card className="transition-all hover:shadow-md">
+          <Card className="kk-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Total Spent (This Month)
@@ -715,7 +833,7 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-           <Card className="transition-all hover:shadow-md">
+          <Card className="kk-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Total Spent (Today)
@@ -731,7 +849,7 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="transition-all hover:shadow-md">
+          <Card className="kk-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Cash Spent (This Month)</CardTitle>
               <Wallet className="h-6 w-6 text-muted-foreground" />
@@ -745,7 +863,7 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="transition-all hover:shadow-md">
+          <Card className="kk-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total UPI Spent (This Month)</CardTitle>
               <Landmark className="h-6 w-6 text-muted-foreground" />
@@ -761,7 +879,197 @@ export default function DashboardPage() {
           </Card>
         </div>
         
-        <Card className="transition-all hover:shadow-md">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card className="kk-card lg:col-span-2">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <CardTitle className="text-xl">Spend Breakdown</CardTitle>
+                  <CardDescription className="text-xs">
+                    This month’s spend across categories.
+                  </CardDescription>
+                </div>
+                {categoryBreakdown.total > 0 && (
+                  <div className="text-right text-xs text-muted-foreground">
+                    <div className="font-medium text-foreground">
+                      {formatCurrency(categoryBreakdown.total)}
+                    </div>
+                    <div>This month in total</div>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2">
+              {categoryBreakdown.items.length ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="relative">
+                    <ChartContainer
+                      className="aspect-square max-h-[260px]"
+                      config={{
+                        amount: { label: "Amount", color: "hsl(var(--primary))" },
+                      }}
+                    >
+                      <PieChart>
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent
+                              nameKey="category"
+                              formatter={(value) => (
+                                <span className="font-mono tabular-nums">
+                                  {formatCurrency(Number(value))}
+                                </span>
+                              )}
+                            />
+                          }
+                        />
+                        <Pie
+                          data={categoryBreakdown.items}
+                          dataKey="amount"
+                          nameKey="category"
+                          innerRadius={72}
+                          outerRadius={110}
+                          paddingAngle={2}
+                          stroke="transparent"
+                        >
+                          {categoryBreakdown.items.map((entry) => (
+                            <Cell key={entry.category} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ChartContainer>
+                  </div>
+                  <div className="space-y-3">
+                    {categoryBreakdown.items.slice(0, 5).map((item) => (
+                      <div
+                        key={item.category}
+                        className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{ backgroundColor: item.fill }}
+                          />
+                          <span className="capitalize text-sm font-medium">
+                            {item.category}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[11px] font-medium text-muted-foreground">
+                            {item.percent}%
+                          </span>
+                          <span className="font-mono text-sm tabular-nums">
+                            {formatCurrency(item.amount)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 text-center">
+                  <p className="text-sm font-medium">No expenses yet</p>
+                  <p className="max-w-md text-xs text-muted-foreground">
+                    Add a few expenses and your category chart will show up here.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="kk-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl">Quick Filters</CardTitle>
+              <CardDescription className="text-xs">
+                Focus on a category or export a simple CSV.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["all", "All"],
+                    ["food", "Food"],
+                    ["transport", "Transport"],
+                    ["shopping", "Shopping"],
+                    ["bills", "Bills"],
+                    ["other", "Other"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant={categoryFilter === value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCategoryFilter(value)}
+                    className={cn(
+                      "h-8 rounded-full px-3 text-xs",
+                      categoryFilter !== value &&
+                        "border-border/70 bg-background/70 hover:border-primary/60 hover:bg-primary/5"
+                    )}
+                    style={
+                      value !== "all"
+                        ? { borderColor: `${CATEGORY_COLORS[value as ExpenseCategory]}55` }
+                        : undefined
+                    }
+                  >
+                    {value !== "all" && (
+                      <span
+                        className="mr-2 h-2 w-2 rounded-full"
+                        style={{ backgroundColor: CATEGORY_COLORS[value as ExpenseCategory] }}
+                      />
+                    )}
+                    {label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full border-border/70 bg-background/70 text-xs hover:border-primary/60 hover:bg-primary/5"
+                  onClick={() => {
+                    if (!currentMonthExpenses.length) return;
+                    downloadCsv(
+                      `khorcha-khata-${format(new Date(), "yyyy-MM")}.csv`,
+                      [
+                        ["date", "name", "category", "paymentMethod", "amount"],
+                        ...currentMonthExpenses.map((e) => [
+                          format(e.date, "yyyy-MM-dd"),
+                          e.name,
+                          e.category,
+                          e.paymentMethod,
+                          String(e.amount),
+                        ]),
+                      ]
+                    );
+                  }}
+                  disabled={!currentMonthExpenses.length}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export CSV
+                </Button>
+                {(searchTerm || categoryFilter !== "all") && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-full text-xs"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setCategoryFilter("all");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="kk-card">
           <CardHeader>
             <CardTitle>Add a New Expense</CardTitle>
             <CardDescription>
@@ -772,13 +1080,13 @@ export default function DashboardPage() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
+                className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-6"
               >
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
-                    <FormItem className="sm:col-span-2">
+                    <FormItem className="sm:col-span-2 lg:col-span-3">
                       <FormLabel>Expense Name</FormLabel>
                       <FormControl>
                         <Input
@@ -862,7 +1170,7 @@ export default function DashboardPage() {
                   control={form.control}
                   name="date"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col pt-2 sm:col-span-2 lg:col-span-1">
+                    <FormItem className="flex flex-col sm:col-span-1 lg:col-span-2">
                       <FormLabel>Date</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -870,7 +1178,7 @@ export default function DashboardPage() {
                             <Button
                               variant={"outline"}
                               className={cn(
-                                "pl-3 text-left font-normal",
+                                "h-10 w-full justify-start pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
@@ -902,7 +1210,7 @@ export default function DashboardPage() {
                 />
                 <Button
                   type="submit"
-                  className="w-full sm:col-span-3 lg:col-span-4"
+                  className="h-10 w-full sm:col-span-1 lg:col-span-4"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Expense
@@ -912,14 +1220,13 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="transition-all hover:shadow-md">
+        <Card className="kk-card mt-2 border-[3px] border-[color:rgb(15_23_42)] bg-card shadow-[6px_6px_0_0_rgb(15_23_42)]">
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
-                <CardTitle>Recent Expenses</CardTitle>
-                <CardDescription>
-                  A list of your transactions for the current month.
-                </CardDescription>
+                <CardTitle className="text-base font-extrabold uppercase tracking-[0.18em]">
+                  Recent Expenses
+                </CardTitle>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <div className="relative w-full sm:w-auto">
@@ -928,6 +1235,9 @@ export default function DashboardPage() {
                       type="search"
                       placeholder="Search expenses..."
                       className="pl-8 w-full sm:w-64"
+                      ref={(el) => {
+                        searchRef.current = el;
+                      }}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -951,7 +1261,10 @@ export default function DashboardPage() {
           <CardContent>
              {isFetching ? (
               <div className="h-24 text-center text-muted-foreground flex items-center justify-center">
-                Loading expenses...
+                <span className="kk-chip">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                  Loading expenses…
+                </span>
               </div>
             ) : currentMonthExpenses.length > 0 ? (
                 <PaginatedExpenseTable
@@ -960,46 +1273,62 @@ export default function DashboardPage() {
                   onDelete={deleteExpense}
                 />
              ) : (
-               <div className="h-24 text-center text-muted-foreground flex items-center justify-center">
-                 No expenses found for the current month.
+               <div className="flex min-h-[120px] flex-col items-center justify-center gap-2 text-center">
+                 <div className="kk-chip">
+                   <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                   Nothing matches your filters
+                 </div>
+                 <p className="text-xs text-muted-foreground">
+                   Try clearing filters, or add a new expense above.
+                 </p>
                </div>
              )}
           </CardContent>
         </Card>
         
          {pastMonthsExpenses.length > 0 && (
-          <Card className="transition-all hover:shadow-md">
-            <CardHeader>
-              <CardTitle>Past Expenses</CardTitle>
-              <CardDescription>
-                Your transaction history from previous months.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="single" collapsible className="w-full">
-                {pastMonthsExpenses.map(({ month, expenses: monthExpenses }) => {
-                  const monthTotal = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-                  return (
-                    <AccordionItem key={month.toISOString()} value={month.toISOString()}>
-                      <AccordionTrigger>
-                        <div className="flex justify-between w-full pr-4">
-                          <span>{format(month, "MMMM yyyy")}</span>
-                          <span className="font-semibold">{formatCurrency(monthTotal)}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
+        <Card className="kk-card mt-2 border-[3px] border-[color:rgb(15_23_42)] bg-card shadow-[6px_6px_0_0_rgb(15_23_42)]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-extrabold uppercase tracking-[0.18em]">
+              Past Expenses
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Month-wise history in the same retro table style.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+              {pastMonthsExpenses.map(({ month, expenses: monthExpenses }) => {
+                const monthTotal = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                return (
+                  <AccordionItem
+                    key={month.toISOString()}
+                    value={month.toISOString()}
+                    className="border-b border-[color:rgb(15_23_42_/_0.5)]"
+                  >
+                    <AccordionTrigger className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.16em] hover:bg-[hsl(48_100%_92%)]">
+                      <div className="flex w-full items-center justify-between">
+                        <span>{format(month, "MMMM yyyy")}</span>
+                        <span className="text-[11px] font-bold">
+                          {formatCurrency(monthTotal)}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-0 pt-0">
+                      <div className="mt-2 overflow-x-auto">
                         <PaginatedExpenseTable
                           expenses={monthExpenses}
                           onUpdate={handleUpdateExpense}
                           onDelete={deleteExpense}
                         />
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            </CardContent>
-          </Card>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </CardContent>
+        </Card>
         )}
         <Footer />
       </main>

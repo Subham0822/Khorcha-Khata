@@ -10,7 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['var(--font-br-sonoma)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-br-sonoma)', 'system-ui', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -70,6 +71,19 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       keyframes: {
+        "kk-aurora": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
+        "kk-float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        "kk-shine": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "100%": { backgroundPosition: "200% 50%" },
+        },
         'accordion-down': {
           from: {
             height: '0',
@@ -88,6 +102,9 @@ export default {
         },
       },
       animation: {
+        "kk-aurora": "kk-aurora 10s ease-in-out infinite",
+        "kk-float": "kk-float 6s ease-in-out infinite",
+        "kk-shine": "kk-shine 1.6s linear infinite",
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
