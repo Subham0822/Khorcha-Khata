@@ -732,10 +732,14 @@ export default function DashboardPage() {
     }
     try {
       await addExpense(user.uid, values as NewExpense);
-      form.reset();
-      form.setValue("date", new Date());
-      form.setValue("paymentMethod", "cash");
-      form.setValue("category", "other");
+      // Reset form but keep last-selected payment & category so UI and state stay in sync
+      form.reset({
+        name: "",
+        amount: "" as unknown as number,
+        category: values.category,
+        paymentMethod: values.paymentMethod,
+        date: new Date(),
+      });
       toast({
         title: "Expense Added",
         description: `${values.name} has been successfully added.`,
@@ -1123,7 +1127,7 @@ export default function DashboardPage() {
                       <FormLabel>Category</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -1150,7 +1154,7 @@ export default function DashboardPage() {
                       <FormLabel>Payment</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
