@@ -59,7 +59,7 @@
     "next": "15.3.8",
     "next-themes": "^0.3.0",
     "patch-package": "^8.0.0",
-    "react": "^18.3.1",
+    "react": "^19.2.4",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
@@ -71,7 +71,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@types/node": "^20",
-    "@types/react": "^18",
+    "@types/react": "^19",
     "@types/react-dom": "^18",
     "eslint": "^9.39.4",
     "eslint-config-next": "^15.3.8",
