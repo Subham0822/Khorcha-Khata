@@ -6,13 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import {
-  Car,
-  CreditCard,
-  LayoutGrid,
   PlusCircle,
-  ShoppingBag,
   Trash2,
-  Utensils,
   CalendarIcon,
   Pencil,
   Wallet,
@@ -27,7 +22,6 @@ import { format, startOfMonth, isSameMonth, isToday } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -129,30 +123,12 @@ const expenseSchema = z.object({
 
 type ExpenseCategory = Expense["category"];
 
-const categoryIcons: Record<ExpenseCategory, React.ReactNode> = {
-  food: <Utensils className="h-4 w-4" />,
-  transport: <Car className="h-4 w-4" />,
-  shopping: <ShoppingBag className="h-4 w-4" />,
-  bills: <CreditCard className="h-4 w-4" />,
-  other: <LayoutGrid className="h-4 w-4" />,
-};
-
-const paymentMethodIcons: Record<Expense['paymentMethod'], React.ReactNode> = {
-  cash: <Wallet className="h-4 w-4" />,
-  upi: <Landmark className="h-4 w-4" />,
-};
-
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   food: "#fb7185", // rose-400
   transport: "#38bdf8", // sky-400
   shopping: "#a78bfa", // violet-400
   bills: "#34d399", // emerald-400
   other: "#fbbf24", // amber-400
-};
-
-const PAYMENT_COLORS: Record<Expense["paymentMethod"], string> = {
-  cash: "#fbbf24", // amber-400
-  upi: "#38bdf8", // sky-400
 };
 
 function formatCurrency(amount: number) {
@@ -226,7 +202,7 @@ function EditExpenseDialog({
         <DialogHeader>
           <DialogTitle>Edit Expense</DialogTitle>
           <DialogDescription>
-            Make changes to your expense here. Click save when you're done.
+            Make changes to your expense here. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -392,11 +368,11 @@ function PaginatedExpenseTable({
     currentPage * EXPENSES_PER_PAGE
   );
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = React.useCallback((page: number) => {
     const pageNumber = Math.max(1, Math.min(page, totalPages));
     setCurrentPage(pageNumber);
     setInputValue(String(pageNumber));
-  };
+  }, [totalPages]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -415,9 +391,9 @@ function PaginatedExpenseTable({
     if (totalPages > 0 && currentPage > totalPages) {
       handlePageChange(totalPages);
     } else if (currentPage === 0 && totalPages > 0) {
-      handlePageChange(1)
+      handlePageChange(1);
     }
-  }, [totalPages, currentPage]);
+  }, [totalPages, currentPage, handlePageChange]);
 
   return (
     <div className="space-y-4">

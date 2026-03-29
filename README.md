@@ -1,35 +1,43 @@
-## Khorcha Khata
+# Khorcha Khata
 
-Khorcha Khata is a minimal, calming expense tracker. It lets you quickly log expenses, see them in a clean two‑column layout (name and amount), and view your total spent. Authentication is handled via Firebase (Google and GitHub), and data is stored in Firebase.
+[![CI](https://github.com/Subham0822/Expensify-Zen/actions/workflows/ci.yml/badge.svg)](https://github.com/Subham0822/Expensify-Zen/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-### Features
+**Khorcha Khata** is a minimal, calming expense tracker. It lets you quickly log expenses, see them in a clean two‑column layout (name and amount), and view your total spent. Authentication is handled via Firebase (Google and GitHub), and data is stored in Firebase.
+
+## Features
 
 - **Expense list**: Clean two‑column display of name and amount
 - **Total spent**: Automatic aggregation of all logged expenses
 - **Social auth**: Sign in with Google or GitHub via Firebase Authentication
 - **Modern UI**: Tailwind CSS + shadcn/ui with a soft violet theme
 
-### Tech Stack
+## Tech stack
 
 - **Framework**: Next.js (App Router) + TypeScript
 - **UI**: Tailwind CSS, shadcn/ui
-- **Auth & Data**: Firebase (Authentication, Firestore)
+- **Auth & data**: Firebase (Authentication, Firestore)
 
 ---
 
-## Getting Started
+## Getting started
 
-### 1) Prerequisites
+### Prerequisites
 
-- Node.js 18+ (LTS recommended)
+- Node.js 18+ (LTS recommended; CI uses Node 20 — see `.nvmrc`)
 - A Firebase project (with a Web App created)
 
-### 2) Environment variables
+### Environment variables
 
-Create a `.env.local` file in the project root and add the following variables:
+Copy the example file and fill in your Firebase Web SDK values:
+
+```bash
+cp .env.example .env.local
+```
+
+Variables (see `.env.example` for the full list):
 
 ```env
-# .env.local
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
@@ -45,18 +53,28 @@ Where to find these values:
 - In Firebase Console → Project settings → Your apps → Web app → SDK setup and configuration.
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` should typically look like `<project-id>.firebaseapp.com` (or your custom Firebase Hosting domain).
 
-### 3) Install and run
+### Install and run
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-App runs at `http://localhost:3000`.
+The app runs at [http://localhost:9002](http://localhost:9002) (see `package.json` `dev` script).
+
+### Checks (same as CI)
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
+
+For `build`, set the same `NEXT_PUBLIC_*` variables as in production (CI uses placeholder values).
 
 ---
 
-## Firebase Setup
+## Firebase setup
 
 1. In Firebase Console → Authentication → Sign-in method:
    - Enable **Google** and **GitHub** providers.
@@ -72,6 +90,16 @@ App runs at `http://localhost:3000`.
 1. Add the same environment variables in your Vercel Project Settings → Environment Variables.
 2. Redeploy the app after any env or provider changes.
 3. Ensure your Vercel domain(s) are added to Firebase Authorized domains.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Security
+
+See [SECURITY.md](SECURITY.md).
 
 ---
 
